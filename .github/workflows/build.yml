@@ -1,0 +1,71 @@
+name: Build macOS App
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show Xcode and SDK versions
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks
+
+      - name: Generate Secrets.xcconfig
+        run: |
+          printf 'IS_DEVELOPMENT = false\nBRANCH = main\n' > Secrets.xcconfig
+          cat Secrets.xcconfig
+
+      - name: Resolve SwiftPM package dependencies
+        run: |
+          xcodebuild -project PCL.Mac.xcodeproj -scheme PCL.Mac -resolvePackageDependencies
+
+      - name: Build Release (arm64, unsigned)
+        run: |
+          set -e
+          PROJECT="PCL.Mac.xcodeproj"
+          SCHEME="PCL.Mac"
+
+          xcodebuild -project "$PROJECT" -scheme "$SCHEME" \
+            -configuration Release \
+            -archivePath build/PCL-Mac.xcarchive \
+            -xcconfig Secrets.xcconfig \
+            ARCHS="arm64" ONLY_ACTIVE_ARCH=YES \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            archive
+
+      - name: Copy .app to build/Release
+        run: |
+          set -e
+          mkdir -p build/Release
+          APP_PATH="build/PCL-Mac.xcarchive/Products/Applications/PCL2 for Mac Beta.app"
+          if [ -d "$APP_PATH" ]; then
+            cp -R "$APP_PATH" build/Release/
+          else
+            echo "PCL2 for Mac Beta.app not found!"
+            exit 1
+          fi
+
+      - name: Verify app binary
+        run: |
+          file "build/Release/PCL2 for Mac Beta.app/Contents/MacOS/PCL.Mac"
+          ls -la "build/Release/PCL2 for Mac Beta.app/Contents/Frameworks/"
+
+      - name: Zip PCL2 for Mac Beta.app
+        run: |
+          cd build/Release
+          zip -r "PCL2 for Mac Beta.zip" "PCL2 for Mac Beta.app"
+
+      - name: Upload build product
+        uses: actions/upload-artifact@v4
+        with:
+          name: PCL2-Mac-Beta
+          path: build/Release/PCL2 for Mac Beta.zip
