@@ -45,8 +45,10 @@ public class ResourceInstallTask: InstallTask {
         let base = instance.runningDirectory
         return switch version.projectType {
         case .mod: base.appending(path: "mods")
+        case .modpack: base.appending(path: "modpacks")
         case .resourcepack: base.appending(path: "resourcepacks")
         case .shader: base.appending(path: "shaderpacks")
+        case .datapack: base.appending(path: "datapacks")
         }
     }
     

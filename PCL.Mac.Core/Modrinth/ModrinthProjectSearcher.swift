@@ -9,13 +9,15 @@ import Foundation
 import SwiftyJSON
 
 public enum ProjectType: String {
-    case mod, resourcepack, shader
+    case mod, modpack, resourcepack, shader, datapack
     
     public func getName() -> String {
         switch self {
         case .mod: "Mod"
+        case .modpack: "整合包"
         case .resourcepack: "资源包"
         case .shader: "光影包"
+        case .datapack: "数据包"
         }
     }
 }
